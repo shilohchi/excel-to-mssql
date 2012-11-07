@@ -215,122 +215,20 @@ class InfoParser(object):
 		}
 		return service_info
 	
-	def parse_as_text(self):
-		info = self.parse()
-
-		basic_info = info["basic_info"]
-		basic_info_text = u"\n".join([
-			u"基本信息",
-			u"========",
-				u"\t名称: %s" % basic_info["name_zh"],
-				u"\t所属学校: %s" % basic_info["school"],
-				u"\t图片url: %s" % basic_info["picpath"],
-				u"\t仪器编名称: %s" % basic_info["name_en"],
-				u"\t所属校内单位: %s" % basic_info["affiliation"],
-				u"\t放置地点: %s" % basic_info["place"],
-				u"\t仪器负责人: %s" % basic_info["manager"],
-				u"\t制造商国别: %s" % basic_info["country"],
-				u"\t制造厂商: %s" % basic_info["manufacturer"],
-				u"\t仪器规格: %s" % basic_info["specification"],
-				u"\t价值: %s" % basic_info["value"],
-				u"\t单位: %s" % basic_info["metric"],
-				u"\t购置日期: %s" % basic_info["date"]
-		])
-
-		performace_info = info["performace_info"]
-		performace_info_text = u"\n".join([
-			u"性能信息",
-			u"========",
-				u"\t主要技术指标: %s" % performace_info["tech_info"],
-				u"\t主要功能特色: %s" % performace_info["func_info"]
-		])
-
-		research_info = info["research_info"]
-		research_info_text = u"\n".join([
-			u"科研信息",
-			u"========",
-				u"\t主要研究方向: %s" % research_info["direction"],
-				u"\t在研项目: %s" % research_info["projects"],
-				u"\t专利或奖项: %s" % research_info["patent"]
-		])
-
-		service_info = info["service_info"]
-		service_info_text = u"\n".join([
-			u"共享服务信息",
-			u"============",
-				u"\t联盟内: %s" % service_info["unionin"],
-				u"\t联盟外: %s" % service_info["unionout"],
-				u"\t联系人: %s" % service_info["name"],
-				u"\t联系电话: %s" % service_info["tel"],
-				u"\t电子邮件: %s" % service_info["email"],
-				u"\t开放时间: %s" % service_info["opentime"]
-		])
-
-		articles_info = info["research_info"]["articles"]
-		t = [
-			u"论刊信息",
-			u"========"
-		]
-
-		for s in articles_info:
-			t.append(u"\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
-				s["id"],
-				s["author"],
-				s["title"],
-				s["journal"],
-				s["year"],
-				s["code"],
-				s["pages"]
-			))
-
-		articles_info_text = u"\n".join(t)
-
-		text = u"\n".join([
-			basic_info_text,
-			performace_info_text,
-			research_info_text,
-			service_info_text,
-			articles_info_text
-		])
-		return text
 
 def storeDeviceInfo(conn, info):
 	cur = conn.cursor()
-	cur.execute("""
+	cur.execute((u"""
 		insert into device (
-			name, school, picpath, code, englishname, institution, place,
-			manager, producecountry, producer, specmodel,
-			worth, measureunit, purchasetime,
-			ability, chara,
 			researchfiled, ownproject, ownpatent,
 			unionout, unionin, personname, 
 			persontelephone, personemail, opentime
 		) values (
-			'%s', '%s', '%s', '%s', '%s', '%s', '%s',
-			'%s', '%s', '%s', '%s',
-			%s, '%s', '%s',
-			'%s', '%s',
 			'%s', '%s', '%s',
 			'%s', '%s', '%s',
 			'%s', '%s', '%s'
 		)
 	""" % ( 
-		info["basic_info"]["name_zh"],
-		info["basic_info"]["school"],
-		info["basic_info"]["picpath"],
-		info["basic_info"]["id"],
-		info["basic_info"]["name_en"],
-		info["basic_info"]["affiliation"],
-		info["basic_info"]["place"],
-		info["basic_info"]["manager"],
-		info["basic_info"]["country"],
-		info["basic_info"]["manufacturer"],
-		info["basic_info"]["specification"],
-		info["basic_info"]["value"],
-		info["basic_info"]["metric"],
-		info["basic_info"]["date"],
-		info["performace_info"]["tech_info"],
-		info["performace_info"]["func_info"],
 		info["research_info"]["direction"],
 		info["research_info"]["projects"],
 		info["research_info"]["patent"],
@@ -340,7 +238,7 @@ def storeDeviceInfo(conn, info):
 		info["service_info"]["tel"],
 		info["service_info"]["email"],
 		info["service_info"]["opentime"]
-	))
+	)).encode("utf8"))
 	conn.commit()
 
 def storeArticlesInfo(cur, info):
