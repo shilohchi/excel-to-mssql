@@ -1,8 +1,10 @@
 # encoding: utf8
+import os
 import logging
 import os
 import pymssql
 from openpyxl.reader.excel import load_workbook
+logging.basicConfig(level=logging.DEBUG)
 
 def convertToNumber(s):
 	t = ""
@@ -26,17 +28,17 @@ class InfoParser(object):
 
 		self.performace_info_start = (9, 0)
 		row = 9
-		while row < 20 and self.ws.cell(row=row, column=0).value != u"相":
+		while row < 30 and self.ws.cell(row=row, column=0).value != u"相":
 			row += 1
-		if row == 20:
+		if row == 30:
 			raise StandardError
 		else:
 			self.performace_info_end = (row, 0)
 
 		self.research_info_start = (row, 0)
-		while row < 40 and self.ws.cell(row=row, column=0).value != u"共":
+		while row < 50 and self.ws.cell(row=row, column=0).value != u"共":
 			row += 1
-		if row == 40:
+		if row == 50:
 			raise StandardError
 		else:
 			self.research_info_end = (row, 0)
@@ -94,7 +96,7 @@ class InfoParser(object):
 		t = []
 		row = self.performace_info_start[0]
 		while row < row_func:
-			t.append(self.ws.cell(row=row, column=col + 2).value)
+			t.append(unicode(self.ws.cell(row=row, column=col + 2).value))
 			row += 1
 		for i in range(len(t)):
 			if t[i] is None:
@@ -220,15 +222,39 @@ def storeDeviceInfo(conn, info):
 	cur = conn.cursor()
 	cur.execute((u"""
 		insert into device (
+			name, school, picpath, code, englishname, institution, place,
+			manager, producecountry, producer, specmodel,
+			worth, measureunit, purchasetime,
+			ability, chara,
 			researchfiled, ownproject, ownpatent,
 			unionout, unionin, personname, 
 			persontelephone, personemail, opentime
 		) values (
+			'%s', '%s', '%s', '%s', '%s', '%s', '%s',
+			'%s', '%s', '%s', '%s',
+			%s, '%s', '%s',
+			'%s', '%s',
 			'%s', '%s', '%s',
 			'%s', '%s', '%s',
 			'%s', '%s', '%s'
 		)
 	""" % ( 
+		info["basic_info"]["name_zh"],
+		info["basic_info"]["school"],
+		info["basic_info"]["picpath"],
+		info["basic_info"]["id"],
+		info["basic_info"]["name_en"],
+		info["basic_info"]["affiliation"],
+		info["basic_info"]["place"],
+		info["basic_info"]["manager"],
+		info["basic_info"]["country"],
+		info["basic_info"]["manufacturer"],
+		info["basic_info"]["specification"],
+		info["basic_info"]["value"],
+		info["basic_info"]["metric"],
+		info["basic_info"]["date"],
+		info["performace_info"]["tech_info"],
+		info["performace_info"]["func_info"],
 		info["research_info"]["direction"],
 		info["research_info"]["projects"],
 		info["research_info"]["patent"],
@@ -241,8 +267,39 @@ def storeDeviceInfo(conn, info):
 	)).encode("utf8"))
 	conn.commit()
 
-def storeArticlesInfo(cur, info):
-	pass
+def storeArticlesInfo(conn, info):
+	cur = conn.cursor()
+	cur.execute((u"select id from device where code='%s'" % info["basic_info"]["id"]).encode("utf8"))
+	id = cur.fetchone()[0]
+	articles = info["research_info"]["articles"]
+	for art in articles:
+		cur.execute((u"""
+			insert into article (
+				deviceid, code, writername,
+				title, periodname, time,
+				foldercode, page
+			) values (
+				%s, %s, '%s',
+				'%s', '%s', '%s',
+				'%s', '%s'
+			)
+		""" % (
+			id, art["id"], art["author"],
+			art["title"], art["journal"], art["year"],
+			art["code"], art["pages"]
+		)).encode("utf8"))
+		conn.commit()
+
+def store(conn, filelst, pos):
+	id = pos
+	for name in filelst[pos:]:
+		if name.endswith(".xlsx"):
+			logging.debug("id: %s, name: %s" % (id, name))
+			parser = InfoParser(name)
+			info = parser.parse()
+			storeDeviceInfo(conn, info)
+			storeArticlesInfo(conn, info)
+			id += 1
 
 if __name__ == "__main__":
 	pass
